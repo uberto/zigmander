@@ -1,0 +1,14 @@
+# Zig build artifacts
+.zig-cache/
+zig-out/
+*.o
+
+# Potential documentation temporary files
+docgen-tmp/
+
+# IDE files (optional but recommended)
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
