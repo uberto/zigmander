@@ -1,5 +1,6 @@
 const std = @import("std");
 const vaxis = @import("vaxis");
+const build_options = @import("build_options");
 const app_mod = @import("app.zig");
 const AppState = app_mod.AppState;
 const panel_mod = @import("panel.zig");
@@ -31,7 +32,7 @@ fn frameDupe(s: []const u8) []const u8 {
 }
 
 // Color palette
-const col_dir: vaxis.Color = .{ .index = 12 };
+const col_dir: vaxis.Color = .{ .index = 11 }; // pale yellow — more readable than blue on dark bg
 const col_sel: vaxis.Color = .{ .index = 3 };
 const col_bar_fg: vaxis.Color = .{ .index = 0 };
 const col_bar_bg: vaxis.Color = .{ .index = 6 };
@@ -403,33 +404,23 @@ fn drawStatusBar(win: vaxis.Window, state: *const AppState) void {
         return;
     }
 
-    if (state.fn_mode) {
-        _ = win.print(&.{
-            .{ .text = "F5",    .style = key_style }, .{ .text = " Copy  ",     .style = bar_style },
-            .{ .text = "F6",    .style = key_style }, .{ .text = " Move  ",     .style = bar_style },
-            .{ .text = "F7",    .style = key_style }, .{ .text = " Mkdir  ",    .style = bar_style },
-            .{ .text = "F8",    .style = key_style }, .{ .text = " Del  ",      .style = bar_style },
-            .{ .text = "F10",   .style = key_style }, .{ .text = " Quit  ",     .style = bar_style },
-            .{ .text = "Opt+F", .style = key_style }, .{ .text = " exit Fn",    .style = bar_style },
+    _ = win.print(&.{
+            .{ .text = "c", .style = key_style }, .{ .text = "opy  ",   .style = bar_style },
+            .{ .text = "m", .style = key_style }, .{ .text = "ove  ",   .style = bar_style },
+            .{ .text = "r", .style = key_style }, .{ .text = "en  ",    .style = bar_style },
+            .{ .text = "d", .style = key_style }, .{ .text = "el  ",    .style = bar_style },
+            .{ .text = "n", .style = key_style }, .{ .text = "ew  ",    .style = bar_style },
+            .{ .text = "o", .style = key_style }, .{ .text = "pen  ",   .style = bar_style },
+            .{ .text = ".", .style = key_style }, .{ .text = "hid  ",   .style = bar_style },
+            .{ .text = "s", .style = key_style }, .{ .text = "ort  ",   .style = bar_style },
+            .{ .text = "b", .style = key_style }, .{ .text = "size  ",  .style = bar_style },
+            .{ .text = "p", .style = key_style }, .{ .text = "erm  ",   .style = bar_style },
+            .{ .text = "t", .style = key_style }, .{ .text = "ime  ",   .style = bar_style },
+            .{ .text = "T", .style = key_style }, .{ .text = "ime  ",   .style = bar_style },
+            .{ .text = "|", .style = key_style }, .{ .text = "split  ", .style = bar_style },
+            .{ .text = "?", .style = key_style }, .{ .text = "help  ",  .style = bar_style },
+            .{ .text = "q", .style = key_style }, .{ .text = "uit",     .style = bar_style },
         }, .{ .row_offset = 0, .col_offset = 1, .wrap = .none });
-    } else {
-        _ = win.print(&.{
-            .{ .text = "C", .style = key_style }, .{ .text = "opy  ",    .style = bar_style },
-            .{ .text = "M", .style = key_style }, .{ .text = "ove  ",    .style = bar_style },
-            .{ .text = "R", .style = key_style }, .{ .text = "en  ",     .style = bar_style },
-            .{ .text = "D", .style = key_style }, .{ .text = "el  ",     .style = bar_style },
-            .{ .text = "N", .style = key_style }, .{ .text = "ew  ",     .style = bar_style },
-            .{ .text = ".", .style = key_style }, .{ .text = "Hidden  ", .style = bar_style },
-            .{ .text = "s", .style = key_style }, .{ .text = "Sort  ",   .style = bar_style },
-            .{ .text = "b", .style = key_style }, .{ .text = "Size  ",   .style = bar_style },
-            .{ .text = "p", .style = key_style }, .{ .text = "Perm  ",   .style = bar_style },
-            .{ .text = "m", .style = key_style }, .{ .text = "Mod  ",    .style = bar_style },
-            .{ .text = "c", .style = key_style }, .{ .text = "Created  ", .style = bar_style },
-            .{ .text = "|", .style = key_style }, .{ .text = "Split  ",  .style = bar_style },
-            .{ .text = "?", .style = key_style }, .{ .text = " Help  ",  .style = bar_style },
-            .{ .text = "Q", .style = key_style }, .{ .text = "uit",      .style = bar_style },
-        }, .{ .row_offset = 0, .col_offset = 1, .wrap = .none });
-    }
 }
 
 fn drawConfirmModal(win: vaxis.Window, path: []const u8) void {
@@ -490,7 +481,7 @@ fn drawInputModal(win: vaxis.Window, title: []const u8, current_input: []const u
 
 fn drawHelpModal(win: vaxis.Window) void {
     const mw: u16 = @min(62, if (win.width > 4) win.width - 4 else 0);
-    const mh: u16 = 32;
+    const mh: u16 = 37;
     if (mw < 40 or win.height < mh + 2) return;
 
     const mx: u16 = (win.width - mw) / 2;
@@ -512,6 +503,13 @@ fn drawHelpModal(win: vaxis.Window) void {
 
     var r: u16 = 0;
 
+    _ = inner.print(&.{
+        .{ .text = "ZigMC", .style = k_style },
+        .{ .text = "   by Uberto Barbini", .style = dim },
+    }, .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
+
+    r += 1; // blank
+
     _ = inner.print(&.{.{ .text = "\u{2500}\u{2500} Keyboard Shortcuts \u{2500}\u{2500}", .style = h_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
@@ -529,17 +527,19 @@ fn drawHelpModal(win: vaxis.Window) void {
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
     r += 1;
-    _ = inner.print(&.{.{ .text = "FILE OPERATIONS  (Opt = Option key)", .style = h_style }},
+    _ = inner.print(&.{.{ .text = "FILE OPERATIONS", .style = h_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+C    ", .style = k_style }, .{ .text = "Copy to other panel", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  c        ", .style = k_style }, .{ .text = "Copy to other panel", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+M    ", .style = k_style }, .{ .text = "Move to other panel", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  m        ", .style = k_style }, .{ .text = "Move to other panel", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+R    ", .style = k_style }, .{ .text = "Rename (pre-filled prompt)", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  r        ", .style = k_style }, .{ .text = "Rename (pre-filled prompt)", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+D    ", .style = k_style }, .{ .text = "Delete with confirmation", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  d        ", .style = k_style }, .{ .text = "Delete with confirmation", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+N    ", .style = k_style }, .{ .text = "New directory", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  n        ", .style = k_style }, .{ .text = "New directory", .style = d_style }},
+        .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
+    _ = inner.print(&.{.{ .text = "  o        ", .style = k_style }, .{ .text = "Open with default application", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
     r += 1;
@@ -553,9 +553,9 @@ fn drawHelpModal(win: vaxis.Window) void {
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
     _ = inner.print(&.{.{ .text = "  p        ", .style = k_style }, .{ .text = "Toggle permissions column (rwxr-xr-x)", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  m        ", .style = k_style }, .{ .text = "Toggle modified-date column", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  t        ", .style = k_style }, .{ .text = "Toggle modified-date column", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  c        ", .style = k_style }, .{ .text = "Toggle created-date column", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  T        ", .style = k_style }, .{ .text = "Toggle created-date column", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
     _ = inner.print(&.{.{ .text = "  |        ", .style = k_style }, .{ .text = "Toggle vertical / horizontal split", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
@@ -563,18 +563,17 @@ fn drawHelpModal(win: vaxis.Window) void {
     r += 1;
     _ = inner.print(&.{.{ .text = "APP", .style = h_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+F    ", .style = k_style }, .{ .text = "Toggle Fn-key mode", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  q        ", .style = k_style }, .{ .text = "Quit", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  Opt+Q    ", .style = k_style }, .{ .text = "Quit", .style = d_style }},
+    _ = inner.print(&.{.{ .text = "  Esc      ", .style = k_style }, .{ .text = "Dismiss message / close modal", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
     _ = inner.print(&.{.{ .text = "  ?        ", .style = k_style }, .{ .text = "This help screen", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
-    r += 1;
-    _ = inner.print(&.{.{ .text = "FN MODE  (Opt+F to enable)", .style = h_style }},
-        .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
-    _ = inner.print(&.{.{ .text = "  F5 Copy  F6 Move  F7 Mkdir  F8 Del  F10 Quit", .style = k_style }},
-        .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
+    _ = inner.print(&.{
+        .{ .text = "Built: ", .style = dim },
+        .{ .text = build_options.build_timestamp, .style = d_style },
+    }, .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
     _ = inner.print(&.{.{ .text = "Press any key to close", .style = dim }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none });

@@ -14,7 +14,9 @@ pub const Action = union(enum) {
     rename,
     delete,
     mkdir,
+    open,
     // View toggles
+
     toggle_hidden,
     cycle_sort,
     cycle_size,
@@ -23,9 +25,9 @@ pub const Action = union(enum) {
     toggle_btime,
     toggle_split,
     // App
-    toggle_fn_mode,
     show_help,
     quit,
+    dismiss,
     // Modal text input
     modal_confirm,
     modal_cancel,
@@ -34,9 +36,9 @@ pub const Action = union(enum) {
 };
 
 /// Maps a key event to an Action. Returns null if the key is not bound.
-pub fn keyToAction(key: vaxis.Key, fn_mode: bool, in_modal: bool) ?Action {
+pub fn keyToAction(key: vaxis.Key, in_modal: bool) ?Action {
     if (in_modal) return modalKeyToAction(key);
-    return normalKeyToAction(key, fn_mode);
+    return normalKeyToAction(key);
 }
 
 // ── Modal key mapping ──────────────────────────────────────────────────────
@@ -60,14 +62,13 @@ fn isPrintableAscii(key: vaxis.Key) bool {
 // ── Normal key mapping ─────────────────────────────────────────────────────
 
 /// Handles key input in normal (non-modal) mode.
-fn normalKeyToAction(key: vaxis.Key, fn_mode: bool) ?Action {
+fn normalKeyToAction(key: vaxis.Key) ?Action {
+    if (key.matches(vaxis.Key.escape, .{})) return .dismiss;
     if (navKeyToAction(key))           |a| return a;
     if (viewKeyToAction(key))          |a| return a;
+    if (fileOpKeyToAction(key))        |a| return a;
     if (optionKeyToAction(key))        |a| return a;
     if (macOsOptionKeyToAction(key))   |a| return a;
-    if (fn_mode) {
-        if (fnModeKeyToAction(key))    |a| return a;
-    }
     return null;
 }
 
@@ -82,16 +83,28 @@ fn navKeyToAction(key: vaxis.Key) ?Action {
     return null;
 }
 
-/// View-toggle keys: . s b p | ?
+/// View-toggle keys: . s b p t T |  ?
 fn viewKeyToAction(key: vaxis.Key) ?Action {
     if (key.matches('.', .{})) return .toggle_hidden;
     if (key.matches('s', .{})) return .cycle_sort;
     if (key.matches('b', .{})) return .cycle_size;
     if (key.matches('p', .{})) return .toggle_permissions;
-    if (key.matches('m', .{})) return .toggle_mtime;
-    if (key.matches('c', .{})) return .toggle_btime;
+    if (key.matches('t', .{})) return .toggle_mtime;
+    if (key.matches('T', .{})) return .toggle_btime;
     if (key.matches('|', .{})) return .toggle_split;
     if (key.matches('?', .{})) return .show_help;
+    return null;
+}
+
+/// File operation keys: c m r d n o q (plain, no modifier required)
+fn fileOpKeyToAction(key: vaxis.Key) ?Action {
+    if (key.matches('c', .{})) return .copy;
+    if (key.matches('m', .{})) return .move;
+    if (key.matches('r', .{})) return .rename;
+    if (key.matches('d', .{})) return .delete;
+    if (key.matches('n', .{})) return .mkdir;
+    if (key.matches('o', .{})) return .open;
+    if (key.matches('q', .{})) return .quit;
     return null;
 }
 
@@ -102,7 +115,6 @@ fn optionKeyToAction(key: vaxis.Key) ?Action {
     if (key.matches('r', .{ .alt = true })) return .rename;
     if (key.matches('d', .{ .alt = true })) return .delete;
     if (key.matches('n', .{ .alt = true })) return .mkdir;
-    if (key.matches('f', .{ .alt = true })) return .toggle_fn_mode;
     if (key.matches('q', .{ .alt = true })) return .quit;
     return null;
 }
@@ -116,18 +128,8 @@ fn macOsOptionKeyToAction(key: vaxis.Key) ?Action {
         0x00AE => .rename,         // ®
         0x2202 => .delete,         // ∂
         0x02DC => .mkdir,          // ˜
-        0x0192 => .toggle_fn_mode, // ƒ
         0x0153 => .quit,           // œ
         else   => null,
     };
 }
 
-/// Fn-key bindings, active only when fn_mode is enabled (toggled with Opt+F).
-fn fnModeKeyToAction(key: vaxis.Key) ?Action {
-    if (key.matches(vaxis.Key.f5,  .{})) return .copy;
-    if (key.matches(vaxis.Key.f6,  .{})) return .move;
-    if (key.matches(vaxis.Key.f7,  .{})) return .mkdir;
-    if (key.matches(vaxis.Key.f8,  .{})) return .delete;
-    if (key.matches(vaxis.Key.f10, .{})) return .quit;
-    return null;
-}

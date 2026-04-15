@@ -66,7 +66,7 @@ pub fn main() !void {
         switch (event) {
             .key_press => |key| {
                 const in_modal = state.isInModal();
-                const action = input_mod.keyToAction(key, state.fn_mode, in_modal) orelse continue;
+                const action = input_mod.keyToAction(key, in_modal) orelse continue;
 
                 const visible_rows: usize = if (term_height > 2) term_height - 2 else 1;
                 const result = state.apply(action, visible_rows);

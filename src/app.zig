@@ -46,7 +46,6 @@ pub const AppState = struct {
     panels: [2]Panel,
     active: u1,
     modal: Modal,
-    fn_mode: bool,
     split: SplitMode,
     status_msg: ?[]u8,
 
@@ -62,7 +61,6 @@ pub const AppState = struct {
             .panels = .{ left, right },
             .active = 0,
             .modal = .none,
-            .fn_mode = false,
             .split = .vertical,
             .status_msg = null,
         };
@@ -136,6 +134,7 @@ pub const AppState = struct {
             .rename           => self.handleRename(panel),
             .delete           => self.handleDelete(panel),
             .mkdir            => self.openMkdirPrompt(),
+            .open             => self.handleOpen(panel),
             .toggle_hidden      => self.handleToggleHidden(panel),
             .cycle_sort         => self.handleCycleSort(panel),
             .cycle_size         => self.handleCycleSize(panel),
@@ -143,9 +142,9 @@ pub const AppState = struct {
             .toggle_mtime       => self.handleToggleMtime(panel),
             .toggle_btime       => self.handleToggleBtime(panel),
             .toggle_split       => self.handleToggleSplit(),
-            .toggle_fn_mode   => self.fn_mode = !self.fn_mode,
             .show_help        => self.openHelp(),
             .quit             => return .quit,
+            .dismiss          => {}, // status_msg already cleared above
             // Modal-only actions are no-ops outside a modal
             .modal_confirm, .modal_cancel, .modal_backspace => {},
             .modal_char => |_| {},
@@ -284,6 +283,28 @@ pub const AppState = struct {
         };
         self.freeModal();
         self.modal = .{ .confirm_delete = path };
+    }
+
+    /// Opens the current entry with the system default application (`open`).
+    fn handleOpen(self: *AppState, panel: *Panel) void {
+        const entry = panel.currentEntry() orelse return;
+        const full_path = std.fs.path.join(
+            self.allocator, &.{ panel.path, entry.name },
+        ) catch |err| {
+            self.setStatusMsg("Error: {s}", .{@errorName(err)});
+            return;
+        };
+        defer self.allocator.free(full_path);
+
+        var child = std.process.Child.init(&.{ "open", full_path }, self.allocator);
+        child.stdin_behavior  = .Ignore;
+        child.stdout_behavior = .Ignore;
+        child.stderr_behavior = .Ignore;
+        child.spawn() catch |err| {
+            self.setStatusMsg("Open failed: {s}", .{@errorName(err)});
+            return;
+        };
+        _ = child.wait() catch {};
     }
 
     // ── View handlers ──────────────────────────────────────────────────────
