@@ -1,6 +1,9 @@
 const std = @import("std");
 const fs = @import("fs.zig");
 
+/// Controls how file sizes are presented in the panel.
+pub const SizeDisplay = enum { abbrev, bytes, none };
+
 pub const Panel = struct {
     allocator: std.mem.Allocator,
     path: []u8,
@@ -10,6 +13,10 @@ pub const Panel = struct {
     selections: std.StringHashMapUnmanaged(void),
     show_hidden: bool,
     sort_mode: fs.SortMode,
+    size_display: SizeDisplay,
+    show_permissions: bool,
+    show_mtime: bool,
+    show_btime: bool,
 
     /// Initialises a panel rooted at `path` with default settings.
     pub fn init(allocator: std.mem.Allocator, path: []const u8) !Panel {
@@ -20,14 +27,18 @@ pub const Panel = struct {
         errdefer fs.freeEntries(allocator, entries);
 
         return .{
-            .allocator    = allocator,
-            .path         = owned_path,
-            .entries      = entries,
-            .cursor       = 0,
-            .scroll_offset = 0,
-            .selections   = .{},
-            .show_hidden  = false,
-            .sort_mode    = .name_asc,
+            .allocator        = allocator,
+            .path             = owned_path,
+            .entries          = entries,
+            .cursor           = 0,
+            .scroll_offset    = 0,
+            .selections       = .{},
+            .show_hidden      = false,
+            .sort_mode        = .name_asc,
+            .size_display     = .abbrev,
+            .show_permissions = false,
+            .show_mtime       = false,
+            .show_btime       = false,
         };
     }
 
@@ -162,6 +173,30 @@ pub const Panel = struct {
             .size_asc  => .name_asc,
         };
         self.reload();
+    }
+
+    /// Cycles through size display modes: abbreviated → exact bytes → hidden.
+    pub fn cycleSizeDisplay(self: *Panel) void {
+        self.size_display = switch (self.size_display) {
+            .abbrev => .bytes,
+            .bytes  => .none,
+            .none   => .abbrev,
+        };
+    }
+
+    /// Toggles the Unix permissions column (rwxr-xr-x) on or off.
+    pub fn togglePermissions(self: *Panel) void {
+        self.show_permissions = !self.show_permissions;
+    }
+
+    /// Toggles the last-modified date column on or off.
+    pub fn toggleMtime(self: *Panel) void {
+        self.show_mtime = !self.show_mtime;
+    }
+
+    /// Toggles the birth (creation) date column on or off.
+    pub fn toggleBtime(self: *Panel) void {
+        self.show_btime = !self.show_btime;
     }
 
     // ── Selections ─────────────────────────────────────────────────────────

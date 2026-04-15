@@ -17,6 +17,10 @@ pub const Action = union(enum) {
     // View toggles
     toggle_hidden,
     cycle_sort,
+    cycle_size,
+    toggle_permissions,
+    toggle_mtime,
+    toggle_btime,
     toggle_split,
     // App
     toggle_fn_mode,
@@ -78,10 +82,14 @@ fn navKeyToAction(key: vaxis.Key) ?Action {
     return null;
 }
 
-/// View-toggle keys: . s | ?
+/// View-toggle keys: . s b p | ?
 fn viewKeyToAction(key: vaxis.Key) ?Action {
     if (key.matches('.', .{})) return .toggle_hidden;
     if (key.matches('s', .{})) return .cycle_sort;
+    if (key.matches('b', .{})) return .cycle_size;
+    if (key.matches('p', .{})) return .toggle_permissions;
+    if (key.matches('m', .{})) return .toggle_mtime;
+    if (key.matches('c', .{})) return .toggle_btime;
     if (key.matches('|', .{})) return .toggle_split;
     if (key.matches('?', .{})) return .show_help;
     return null;

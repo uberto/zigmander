@@ -6,6 +6,9 @@ pub const Entry = struct {
     name: []u8,
     kind: EntryKind,
     size: u64,
+    mode:  u32, // POSIX permission bits (lower 9 bits of st_mode), 0 if unavailable
+    mtime: i64, // last-modified time, seconds since Unix epoch, 0 if unavailable
+    btime: i64, // birth (creation) time, seconds since Unix epoch, 0 if unavailable
 };
 
 pub const SortMode = enum { name_asc, name_desc, size_asc, size_desc };
@@ -69,7 +72,14 @@ pub fn listDir(
     return list.toOwnedSlice(allocator);
 }
 
-/// Builds an `Entry` from a raw directory iterator entry, stat-ing files for size.
+/// Stats a filesystem entry (file or directory) by name relative to `dir`.
+/// Uses fstatat which works for both files and directories on POSIX.
+/// Returns null on any error (e.g. permission denied).
+fn statEntry(dir: std.fs.Dir, name: []const u8) ?std.posix.Stat {
+    return std.posix.fstatat(dir.fd, name, 0) catch null;
+}
+
+/// Builds an `Entry` from a raw directory iterator entry.
 fn readDirEntry(
     allocator: std.mem.Allocator,
     dir: *std.fs.Dir,
@@ -84,12 +94,37 @@ fn readDirEntry(
         else       => .other,
     };
 
-    const size: u64 = if (de.kind == .file) blk: {
-        const stat = dir.statFile(de.name) catch break :blk 0;
-        break :blk stat.size;
-    } else 0;
+    const st = statEntry(dir.*, de.name);
+    const size:  u64 = if (st) |s| (if (de.kind == .file and s.size > 0) @intCast(s.size) else 0) else 0;
+    const mode:  u32 = if (st) |s| @as(u32, s.mode) & 0o777 else 0;
+    const mtime: i64 = if (st) |s| @as(i64, @intCast(s.mtimespec.sec))    else 0;
+    const btime: i64 = if (st) |s| @as(i64, @intCast(s.birthtimespec.sec)) else 0;
 
-    return .{ .name = name, .kind = kind, .size = size };
+    return .{ .name = name, .kind = kind, .size = size, .mode = mode, .mtime = mtime, .btime = btime };
+}
+
+/// Formats the lower 9 permission bits of `mode` into a 9-character string.
+/// Example: 0o755 → "rwxr-xr-x"
+pub fn formatPermissions(mode: u32, buf: *[9]u8) []const u8 {
+    const masks = [9]u32{ 0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001 };
+    const chars = [9]u8{ 'r', 'w', 'x', 'r', 'w', 'x', 'r', 'w', 'x' };
+    for (masks, 0..) |mask, i| buf[i] = if (mode & mask != 0) chars[i] else '-';
+    return buf[0..9];
+}
+
+/// Formats a Unix timestamp as "YYYY-MM-DD". Returns "----------" for ts ≤ 0.
+pub fn formatDate(ts: i64, buf: *[10]u8) []const u8 {
+    if (ts <= 0) {
+        @memcpy(buf, "----------");
+        return buf[0..10];
+    }
+    const ep = std.time.epoch;
+    const es = ep.EpochSeconds{ .secs = @intCast(ts) };
+    const yd = es.getEpochDay().calculateYearDay();
+    const md = yd.calculateMonthDay();
+    return std.fmt.bufPrint(buf, "{d:0>4}-{d:0>2}-{d:0>2}", .{
+        yd.year, md.month.numeric(), md.day_index + 1,
+    }) catch buf[0..10];
 }
 
 /// Releases all memory owned by an entries slice.

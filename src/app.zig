@@ -136,9 +136,13 @@ pub const AppState = struct {
             .rename           => self.handleRename(panel),
             .delete           => self.handleDelete(panel),
             .mkdir            => self.openMkdirPrompt(),
-            .toggle_hidden    => self.handleToggleHidden(panel),
-            .cycle_sort       => self.handleCycleSort(panel),
-            .toggle_split     => self.handleToggleSplit(),
+            .toggle_hidden      => self.handleToggleHidden(panel),
+            .cycle_sort         => self.handleCycleSort(panel),
+            .cycle_size         => self.handleCycleSize(panel),
+            .toggle_permissions => self.handleTogglePermissions(panel),
+            .toggle_mtime       => self.handleToggleMtime(panel),
+            .toggle_btime       => self.handleToggleBtime(panel),
+            .toggle_split       => self.handleToggleSplit(),
             .toggle_fn_mode   => self.fn_mode = !self.fn_mode,
             .show_help        => self.openHelp(),
             .quit             => return .quit,
@@ -299,6 +303,34 @@ pub const AppState = struct {
             .size_desc => "size large→small",
         };
         self.setStatusMsg("Sort: {s}", .{label});
+    }
+
+    fn handleCycleSize(self: *AppState, panel: *Panel) void {
+        panel.cycleSizeDisplay();
+        const label: []const u8 = switch (panel.size_display) {
+            .abbrev => "abbreviated",
+            .bytes  => "exact bytes",
+            .none   => "hidden",
+        };
+        self.setStatusMsg("Size: {s}", .{label});
+    }
+
+    fn handleTogglePermissions(self: *AppState, panel: *Panel) void {
+        panel.togglePermissions();
+        const label: []const u8 = if (panel.show_permissions) "shown" else "hidden";
+        self.setStatusMsg("Permissions: {s}", .{label});
+    }
+
+    fn handleToggleMtime(self: *AppState, panel: *Panel) void {
+        panel.toggleMtime();
+        const label: []const u8 = if (panel.show_mtime) "shown" else "hidden";
+        self.setStatusMsg("Modified date: {s}", .{label});
+    }
+
+    fn handleToggleBtime(self: *AppState, panel: *Panel) void {
+        panel.toggleBtime();
+        const label: []const u8 = if (panel.show_btime) "shown" else "hidden";
+        self.setStatusMsg("Created date: {s}", .{label});
     }
 
     fn handleToggleSplit(self: *AppState) void {
