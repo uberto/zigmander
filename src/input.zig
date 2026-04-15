@@ -15,6 +15,7 @@ pub const Action = union(enum) {
     delete,
     mkdir,
     open,
+    symlink,
     // View toggles
 
     toggle_hidden,
@@ -104,6 +105,7 @@ fn fileOpKeyToAction(key: vaxis.Key) ?Action {
     if (key.matches('d', .{})) return .delete;
     if (key.matches('n', .{})) return .mkdir;
     if (key.matches('o', .{})) return .open;
+    if (key.matches('l', .{})) return .symlink;
     if (key.matches('q', .{})) return .quit;
     return null;
 }

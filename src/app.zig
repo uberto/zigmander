@@ -36,6 +36,10 @@ pub const Modal = union(enum) {
         prompt: TextPrompt,
         src: []u8,
     },
+    symlink_prompt: struct {
+        prompt: TextPrompt,
+        src: []u8, // absolute path the symlink will point to
+    },
     help,
 };
 
@@ -78,7 +82,8 @@ pub const AppState = struct {
         switch (self.modal) {
             .none, .mkdir_prompt, .help => {},
             .confirm_delete => |path| self.allocator.free(path),
-            .rename_prompt => |rp| self.allocator.free(rp.src),
+            .rename_prompt  => |rp| self.allocator.free(rp.src),
+            .symlink_prompt => |sp| self.allocator.free(sp.src),
         }
     }
 
@@ -135,6 +140,7 @@ pub const AppState = struct {
             .delete           => self.handleDelete(panel),
             .mkdir            => self.openMkdirPrompt(),
             .open             => self.handleOpen(panel),
+            .symlink          => self.handleSymlink(panel),
             .toggle_hidden      => self.handleToggleHidden(panel),
             .cycle_sort         => self.handleCycleSort(panel),
             .cycle_size         => self.handleCycleSize(panel),
@@ -307,6 +313,24 @@ pub const AppState = struct {
         _ = child.wait() catch {};
     }
 
+    /// Opens a symlink-name prompt for the current entry.
+    /// The symlink is created in the inactive panel's directory.
+    fn handleSymlink(self: *AppState, panel: *Panel) void {
+        const entry = panel.currentEntry() orelse return;
+        const src = std.fs.path.join(
+            self.allocator, &.{ panel.path, entry.name },
+        ) catch |err| {
+            self.setStatusMsg("Error: {s}", .{@errorName(err)});
+            return;
+        };
+        var prompt = TextPrompt{};
+        const copy_len = @min(entry.name.len, prompt.buf.len - 1);
+        @memcpy(prompt.buf[0..copy_len], entry.name[0..copy_len]);
+        prompt.len = copy_len;
+        self.freeModal();
+        self.modal = .{ .symlink_prompt = .{ .prompt = prompt, .src = src } };
+    }
+
     // ── View handlers ──────────────────────────────────────────────────────
 
     fn handleToggleHidden(self: *AppState, panel: *Panel) void {
@@ -377,8 +401,9 @@ pub const AppState = struct {
         switch (self.modal) {
             .none => {},
             .confirm_delete => |path| self.applyDeleteModal(action, path),
-            .mkdir_prompt => |*mp| self.applyMkdirModal(action, mp),
-            .rename_prompt => |*rp| self.applyRenameModal(action, rp),
+            .mkdir_prompt   => |*mp| self.applyMkdirModal(action, mp),
+            .rename_prompt  => |*rp| self.applyRenameModal(action, rp),
+            .symlink_prompt => |*sp| self.applySymlinkModal(action, sp),
             .help => self.modal = .none, // any key closes help
         }
     }
@@ -446,6 +471,34 @@ pub const AppState = struct {
             },
             .modal_char      => |c| rp.prompt.appendChar(c),
             .modal_backspace => rp.prompt.backspace(),
+            else => {},
+        }
+    }
+
+    fn applySymlinkModal(self: *AppState, action: input.Action, sp: anytype) void {
+        switch (action) {
+            .modal_confirm => {
+                var name_buf: [256]u8 = undefined;
+                const name_len = @min(sp.prompt.len, name_buf.len);
+                @memcpy(name_buf[0..name_len], sp.prompt.buf[0..name_len]);
+                const link_name = name_buf[0..name_len];
+                const src = sp.src;
+                self.modal = .none;
+                if (link_name.len > 0) {
+                    const dest_dir = self.inactivePanel().path;
+                    fs.makeSymlink(self.allocator, src, dest_dir, link_name) catch |err|
+                        self.setStatusMsg("Symlink failed: {s}", .{@errorName(err)});
+                    self.inactivePanel().reload();
+                }
+                self.allocator.free(src);
+            },
+            .modal_cancel => {
+                const src = sp.src;
+                self.modal = .none;
+                self.allocator.free(src);
+            },
+            .modal_char      => |c| sp.prompt.appendChar(c),
+            .modal_backspace => sp.prompt.backspace(),
             else => {},
         }
     }

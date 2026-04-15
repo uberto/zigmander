@@ -219,3 +219,11 @@ pub fn makeDir(allocator: std.mem.Allocator, parent: []const u8, name: []const u
     defer allocator.free(path);
     try std.fs.makeDirAbsolute(path);
 }
+
+/// Creates a symlink named `link_name` inside `dest_dir` pointing to `target`.
+/// `target` should be an absolute path.
+pub fn makeSymlink(allocator: std.mem.Allocator, target: []const u8, dest_dir: []const u8, link_name: []const u8) !void {
+    const link_path = try std.fs.path.join(allocator, &.{ dest_dir, link_name });
+    defer allocator.free(link_path);
+    try std.posix.symlink(target, link_path);
+}

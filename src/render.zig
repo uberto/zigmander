@@ -66,7 +66,8 @@ pub fn draw(state: *const AppState, win: vaxis.Window) void {
         .none => {},
         .confirm_delete => |path| drawConfirmModal(win, path),
         .mkdir_prompt => |*mp| drawInputModal(win, "New directory:", mp.text()),
-        .rename_prompt => |*rp| drawInputModal(win, "Rename:", rp.prompt.text()),
+        .rename_prompt   => |*rp| drawInputModal(win, "Rename:", rp.prompt.text()),
+        .symlink_prompt  => |*sp| drawInputModal(win, "Symlink name:", sp.prompt.text()),
         .help => drawHelpModal(win),
     }
 }
@@ -411,6 +412,7 @@ fn drawStatusBar(win: vaxis.Window, state: *const AppState) void {
             .{ .text = "d", .style = key_style }, .{ .text = "el  ",    .style = bar_style },
             .{ .text = "n", .style = key_style }, .{ .text = "ew  ",    .style = bar_style },
             .{ .text = "o", .style = key_style }, .{ .text = "pen  ",   .style = bar_style },
+            .{ .text = "l", .style = key_style }, .{ .text = "nk  ",    .style = bar_style },
             .{ .text = ".", .style = key_style }, .{ .text = "hid  ",   .style = bar_style },
             .{ .text = "s", .style = key_style }, .{ .text = "ort  ",   .style = bar_style },
             .{ .text = "b", .style = key_style }, .{ .text = "size  ",  .style = bar_style },
@@ -540,6 +542,8 @@ fn drawHelpModal(win: vaxis.Window) void {
     _ = inner.print(&.{.{ .text = "  n        ", .style = k_style }, .{ .text = "New directory", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
     _ = inner.print(&.{.{ .text = "  o        ", .style = k_style }, .{ .text = "Open with default application", .style = d_style }},
+        .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
+    _ = inner.print(&.{.{ .text = "  l        ", .style = k_style }, .{ .text = "Symlink in other panel (name prompt)", .style = d_style }},
         .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
     r += 1;
