@@ -506,7 +506,7 @@ fn drawHelpModal(win: vaxis.Window) void {
     var r: u16 = 0;
 
     _ = inner.print(&.{
-        .{ .text = "ZigMC", .style = k_style },
+        .{ .text = "Zigmander", .style = k_style },
         .{ .text = "   by Uberto Barbini", .style = dim },
     }, .{ .row_offset = r, .col_offset = 0, .wrap = .none }); r += 1;
 
