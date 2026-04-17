@@ -6,17 +6,6 @@ By Uberto Barbini.
 
 ---
 
-## Building
-
-Requires **Zig 0.15.2** and a macOS system (uses `open`, `pbcopy`, and POSIX `symlink`).
-
-```sh
-zig build
-./zig-out/bin/zig-mc
-```
-
----
-
 ## Layout
 
 Zigmander opens with two side-by-side panels, both starting in your home directory.  
@@ -147,17 +136,26 @@ Zigmander has two non-interactive diagnostic modes useful for testing and script
 
 ```sh
 # Plain-text table of all entries in a directory (permissions, dates, size)
-zig-mc --dump [path]
+zigmander --dump [path]
 
 # Simulates the TUI column layout and prints it as ASCII text
-zig-mc --dump-render [path]
+zigmander --dump-render [path]
 ```
 
 Both modes default to the current working directory if no path is given.
 
 ---
 
-## Requirements
+## Build from Source
+
+Requires **Zig 0.15.2** and a macOS system (uses `open`, `pbcopy`, and POSIX `symlink`).
+
+```sh
+zig build
+./zig-out/bin/zigmander
+```
+
+### Requirements
 
 - macOS (uses `open` for the open action, `pbcopy` for clipboard, POSIX `symlink`)
 - Zig 0.15.2
