@@ -2,7 +2,19 @@
 
 A dual-panel terminal file manager written in Zig, inspired by Midnight Commander.
 
-By Uberto Barbini.
+> **macOS only** — uses `open`, `pbcopy`, and POSIX `symlink`.
+
+![Zigmander screenshot](docs/zigmander.jpg)
+
+**Features:**
+- Two side-by-side panels with independent sort, filter, and column settings
+- Copy, move, rename, delete, symlink, and open files without leaving the terminal
+- Toggle hidden files, sort by name/size, show permissions and dates per-panel
+- Multi-entry selection for batch copy/move/delete
+- Clipboard integration — pressing Enter on a file copies its path via `pbcopy`
+- Horizontal/vertical split toggle
+
+By Uberto Barbini — MIT License.
 
 ---
 
@@ -160,3 +172,9 @@ zig build
 - macOS (uses `open` for the open action, `pbcopy` for clipboard, POSIX `symlink`)
 - Zig 0.15.2
 - A terminal emulator with at least 80 columns and 40 rows for the full help screen
+
+---
+
+## License
+
+[MIT](LICENSE) — © 2026 Uberto Barbini
